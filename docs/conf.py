@@ -10,6 +10,11 @@ project = "aquarius_webportal"
 copyright = "2023, Kent Inverarity"
 author = "Kent Inverarity"
 
+from importlib.metadata import distribution
+
+release = distribution("aquarius_webportal").version
+version = ".".join(release.split(".")[:2])
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
