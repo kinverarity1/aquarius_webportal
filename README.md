@@ -8,7 +8,7 @@ This is an unofficial side-project done in my spare time.
 
 ## How to use
 
-Check out the [complete package documentation](https://aquarius_webportal.readthedocs.io/en/latest/index.html).
+Check out the [complete package documentation](https://aquarius-webportal.readthedocs.io/en/latest/).
 
 ## Install
 
