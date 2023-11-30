@@ -18,7 +18,7 @@ You will need Python 3.6 or a more recent version.
 $ pip install aquarius_webportal
 ```
 
-This installs the latest [release](https://github.com/kinverarity1/aquarius_webportal/releases) of the Python package ``aquarius_webportal``.
+This installs the latest [release](https://pypi.org/project/aquarius-webportal/) of the Python package ``aquarius_webportal``.
 
 To install the latest code from GitHub, make sure you the dependencies ``pandas`` and ``requests`` installed, then use:
 
