@@ -11,6 +11,7 @@ class AquariusWebPortal:
     
     Args:
         server (str): URL of the Web Portal deployment.
+        session (optional): requests.Session object to use
 
     The main methods to use are:
 
@@ -25,11 +26,16 @@ class AquariusWebPortal:
         params (pd.DataFrame): the available parameters. If the
             portal is disclaimer-blocked, this will be empty (see
             ReadTheDocs documentation for further details)
+        session: reqeusts.Session object
 
     """
-    def __init__(self, server="water.data.sa.gov.au"):
+    def __init__(self, server="water.data.sa.gov.au", session=None, **kwargs):
         if not server.startswith("http"):
             server = "https://" + server
+        if session:
+            self.session = session
+        else:
+            self.session = requests.Session(**kwargs)
         self.server = server
         self.params = self.fetch_params()
 
@@ -45,7 +51,7 @@ class AquariusWebPortal:
                 - param_desc (str)
         
         """
-        r1 = requests.post(self.server + "/Data/List/", payload)
+        r1 = self.session.post(self.server + "/Data/List/", payload)
         return parse_params_from_html(r1.text)
 
     def get_param(self, param_name=None, param_desc=None, param_id=None):
@@ -176,7 +182,7 @@ class AquariusWebPortal:
             if param_id is not None:
                 query["parameters[0]"] = param_id
             url = self.server + "/Data/Data_List?" + urllib.parse.urlencode(query)
-            resp = requests.post(url, data=query)
+            resp = self.session.post(url, data=query)
             data = resp.json()
 
             if n == 0:
@@ -221,6 +227,8 @@ class AquariusWebPortal:
         extra_data_types=None,
         start=None,
         finish=None,
+        session=None,
+        **kwargs
     ):
         """Fetch timeseries data for a single dataset.
         
@@ -297,7 +305,7 @@ class AquariusWebPortal:
         url = self.server + "/Export/BulkExport"
 
         skiprows = 0
-        resp = requests.get(url, data=query)
+        resp = self.session.get(url, data=query)
         header = resp.text[:500].splitlines()
         for i, line in enumerate(header):
             if line.startswith("Timestamp ("):
