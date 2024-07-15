@@ -8,9 +8,10 @@ import pandas as pd
 
 class AquariusWebPortal:
     """Access data from a deployment of Aquarius Web Portal.
-    
+
     Args:
         server (str): URL of the Web Portal deployment.
+        session (optional): requests.Session object to use
 
     The main methods to use are:
 
@@ -25,32 +26,38 @@ class AquariusWebPortal:
         params (pd.DataFrame): the available parameters. If the
             portal is disclaimer-blocked, this will be empty (see
             ReadTheDocs documentation for further details)
+        session: reqeusts.Session object
 
     """
-    def __init__(self, server="water.data.sa.gov.au"):
+
+    def __init__(self, server="water.data.sa.gov.au", session=None, **kwargs):
         if not server.startswith("http"):
             server = "https://" + server
+        if session:
+            self.session = session
+        else:
+            self.session = requests.Session(**kwargs)
         self.server = server
         self.params = self.fetch_params()
 
     def fetch_params(self, payload=None):
         """Fetch the list of available parameters.
-        
+
         Returns:
             pd.DataFrame: a table of available parameters with these
             columns:
-            
+
                 - param_id (int)
                 - param_name (str)
                 - param_desc (str)
-        
+
         """
-        r1 = requests.post(self.server + "/Data/List/", payload)
+        r1 = self.session.post(self.server + "/Data/List/", payload)
         return parse_params_from_html(r1.text)
 
     def get_param(self, param_name=None, param_desc=None, param_id=None):
         """Fetch/identify a single parameter from the ``params`` attribute.
-        
+
         Args:
             param_name (str): select a parameter with this name
             param_desc (str): select a parameter with the description (note
@@ -64,7 +71,7 @@ class AquariusWebPortal:
                 - param_id (int)
                 - param_name (str)
                 - param_desc (str)
-        
+
         """
         if param_name:
             return self.params[self.params.param_name == param_name].iloc[0]
@@ -75,7 +82,7 @@ class AquariusWebPortal:
 
     def fetch_locations(self):
         """Fetch a list of all locations from the portal.
-        
+
         Returns:
             pd.DataFrame: a table of location metadata. The available fields
             may vary between different portals, but these may be present:
@@ -87,7 +94,7 @@ class AquariusWebPortal:
                 - loc_id (called "LocationIdentifier" in the AQWP internal APIs)
                 - loc_type (called "LocType" in the AQWP internal APIs)
                 - loc_folder (called "LocationFolder" in the AQWP internal APIs)
-        
+
         """
         return self.fetch_list()
 
@@ -99,7 +106,7 @@ class AquariusWebPortal:
             param_desc (str): select a parameter with the description (note
                 that usually the description functions as a "long name")
             param_id (int): select the parameter with this ID number
-        
+
         Returns:
             pd.DataFrame: a table of dataset metadata. The available fields
             may vary between different portals, but these may be present:
@@ -117,7 +124,7 @@ class AquariusWebPortal:
                 - dset_end (called "EndOfRecord" in the AQWP internal APIs)
                 - param (str) - derived from dset_name
                 - label (str) - derived from dset_name
-                
+
         """
         if not param_id:
             params = self.fetch_params()
@@ -133,14 +140,14 @@ class AquariusWebPortal:
     def fetch_list(self, param_id=None):
         """Internal function that fetches list data from the /Data/Data_List
         endpoint.
-        
+
         Args:
             param_id (int): if not supplied, the list is of Locations.
                 If supplied, the list is of Datasets/Time series.
-            
+
         Returns:
             pd.DataFrame: a table of results with some columns renamed for
-            convenience: 
+            convenience:
 
                 - wp_loc_id (called "LocationId" in the AQWP internal APIs)
                 - wp_dset_id (called "DatasetId" in the AQWP internal APIs)
@@ -176,7 +183,7 @@ class AquariusWebPortal:
             if param_id is not None:
                 query["parameters[0]"] = param_id
             url = self.server + "/Data/Data_List?" + urllib.parse.urlencode(query)
-            resp = requests.post(url, data=query)
+            resp = self.session.post(url, data=query)
             data = resp.json()
 
             if n == 0:
@@ -221,9 +228,11 @@ class AquariusWebPortal:
         extra_data_types=None,
         start=None,
         finish=None,
+        session=None,
+        **kwargs,
     ):
         """Fetch timeseries data for a single dataset.
-        
+
         Args:
             dset_name (str): the dataset name as ``param.label@location`` - you can
                 get this from the dset_name column of the table returned by
@@ -235,11 +244,11 @@ class AquariusWebPortal:
             data_range (str): either None (the default) or "Days7"
             start (pd.Timestamp): earliest data to retrieve - None by default
             finish (pd.Timestamp): latest data to retrieve - None by default
-            
+
         There are three ways of querying to speed things up, and these are
         selected depending on the values of the **date_range**, **start** and
         **finish** arguments:
-        
+
         (1) Entire period of record - the default - leave the **date_range**,
         **start** and **finish** arguments null.
 
@@ -254,7 +263,7 @@ class AquariusWebPortal:
             DateTimeIndex with timezone-aware timestamps. The time zone
             is derived from that provided by Aquarius Web portal in the header
             of the CSV which is downloaded in the background by this function.
-            The first column will be the requested parameter (short) name 
+            The first column will be the requested parameter (short) name
             with its unit in parentheses e.g. "Discharge (m^3/s)". Following
             columns will be the extra_data_types if requested.
 
@@ -297,7 +306,7 @@ class AquariusWebPortal:
         url = self.server + "/Export/BulkExport"
 
         skiprows = 0
-        resp = requests.get(url, data=query)
+        resp = self.session.get(url, data=query)
         header = resp.text[:500].splitlines()
         for i, line in enumerate(header):
             if line.startswith("Timestamp ("):
@@ -333,7 +342,7 @@ def parse_params_from_html(source):
     Returns:
         pd.DataFrame: a table of available parameters with these
         columns:
-        
+
             - param_id (int)
             - param_name (str)
             - param_desc (str)

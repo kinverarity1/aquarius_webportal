@@ -11,8 +11,6 @@ TEST_REQS = (
     "nbsphinx",
 )
 
-EXTRA_REQS = ()
-
 setup(
     name="aquarius_webportal",
     packages=("aquarius_webportal",),
@@ -28,13 +26,17 @@ setup(
     install_requires=("requests", "pandas>=0.24.1", "lxml"),
     extras_require={
         "test": (TEST_REQS,),
-        "all": (TEST_REQS, EXTRA_REQS),
     },
     tests_require=(TEST_REQS),
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     classifiers=(
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Topic :: Scientific/Engineering",
     ),
-    keywords="water data",
+    keywords="python groundwater data-access surface-water",
 )
