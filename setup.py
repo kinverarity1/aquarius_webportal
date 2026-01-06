@@ -18,13 +18,15 @@ setup(
     ),
     keywords="python groundwater data-access surface-water",
     install_requires=("requests", "pandas>=0.24.1", "lxml"),
-    test_requires=("pytest>=3.6",
-    "pytest-cov",
-    "coverage",
-    "codecov",
-    "pytest-benchmark",
-    "black",
-    "sphinx",
-    "nbsphinx",)
+    test_requires=(
+        "pytest>=3.6",
+        "pytest-cov",
+        "coverage",
+        "codecov",
+        "pytest-benchmark",
+        "black",
+        "sphinx",
+        "nbsphinx",
+    ),
     include_package_data=True,
 )
