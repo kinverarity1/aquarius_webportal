@@ -1,5 +1,7 @@
+import importlib.metadata
+
+__version__ = importlib.metadata.version(__name__)
+
 from .main import *
 
-from .version import version
 
-__version__ = version()
