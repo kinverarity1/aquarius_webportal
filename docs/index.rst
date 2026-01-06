@@ -22,6 +22,14 @@ MIT License.
 
 The project's homepage is at https://github.com/kinverarity1/aquarius_webportal 
 
+Changelog
+=========
+
+Version 0.4 (6 January 2026)
+----------------------------
+
+- Update versioning to use importlib.metadata
+
 Indices and tables
 ==================
 
