@@ -1,4 +1,5 @@
 import io
+import re
 import urllib.parse
 
 import requests
@@ -12,6 +13,11 @@ class AquariusWebPortal:
     Args:
         server (str): URL of the Web Portal deployment.
         session (optional): requests.Session object to use
+        auto_accept_disclaimer (bool): if True (default), and the initial
+            ``fetch_params()`` returns empty (the signature of a
+            disclaimer-blocked deployment), the constructor will attempt
+            to POST the disclaimer-acceptance form and re-fetch. Set to
+            False to skip this behaviour.
 
     The main methods to use are:
 
@@ -24,13 +30,20 @@ class AquariusWebPortal:
     Attributes:
         server (str): as initialised
         params (pd.DataFrame): the available parameters. If the
-            portal is disclaimer-blocked, this will be empty (see
-            ReadTheDocs documentation for further details)
+            portal is disclaimer-blocked and ``auto_accept_disclaimer``
+            is False, this will be empty (see ReadTheDocs documentation
+            for further details).
         session: reqeusts.Session object
 
     """
 
-    def __init__(self, server="water.data.sa.gov.au", session=None, **kwargs):
+    def __init__(
+        self,
+        server="water.data.sa.gov.au",
+        session=None,
+        auto_accept_disclaimer=True,
+        **kwargs,
+    ):
         if not server.startswith("http"):
             server = "https://" + server
         if session:
@@ -39,6 +52,51 @@ class AquariusWebPortal:
             self.session = requests.Session(**kwargs)
         self.server = server
         self.params = self.fetch_params()
+        if auto_accept_disclaimer and len(self.params) == 0:
+            if self.accept_disclaimer():
+                self.params = self.fetch_params()
+
+    def accept_disclaimer(self):
+        """Accept the disclaimer/terms-of-use modal that some Aquarius Web
+        Portal deployments serve before allowing data access (e.g.
+        ``environmentauckland.org.nz``, ``portal.wrt.tas.gov.au``).
+
+        These deployments redirect every page request to ``/Disclaimer``
+        until a session cookie has been marked as accepted via the form
+        on that page. The form is a standard ASP.NET Core POST to
+        ``/AcceptDisclaimer`` carrying a ``__RequestVerificationToken``.
+
+        Returns:
+            bool: True if a disclaimer page was found and the acceptance
+            POST returned a normal status code; False if no disclaimer
+            page was found (the deployment is not disclaimer-blocked) or
+            if the acceptance flow could not be completed.
+
+        """
+        try:
+            r = self.session.get(
+                self.server + "/Disclaimer", allow_redirects=False
+            )
+        except requests.RequestException:
+            return False
+        if r.status_code != 200:
+            return False
+        m = re.search(
+            r'name="__RequestVerificationToken"[^>]*value="([^"]+)"',
+            r.text,
+        )
+        if not m:
+            return False
+        token = m.group(1)
+        try:
+            r = self.session.post(
+                self.server + "/AcceptDisclaimer",
+                data={"returnUrl": "", "__RequestVerificationToken": token},
+                allow_redirects=False,
+            )
+        except requests.RequestException:
+            return False
+        return r.status_code in (200, 302, 303)
 
     def fetch_params(self, payload=None):
         """Fetch the list of available parameters.
